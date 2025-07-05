@@ -16,6 +16,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# Install Playwright browsers and dependencies
+RUN playwright install --with-deps
+
 # NOTE: If 'browser_use' is not available on PyPI, you must install it manually here.
 # For example, if it's a local package, add:
 # COPY browser_use ./browser_use

@@ -4,4 +4,6 @@ python-dotenv
 langchain-openai
 langgraph
 uvicorn[standard]
+playwright
+# The following may be custom or not on PyPI; ensure they are available or provide installation instructions
 browser_use
