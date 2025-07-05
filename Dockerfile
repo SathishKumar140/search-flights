@@ -55,7 +55,16 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Install Playwright browsers and dependencies
-RUN playwright install --with-deps
+RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=uv-cache \
+    uv pip install playwright==1.45.0 patchright==0.1.0 # Specify desired versions directly here
+
+# Install Chromium browser binary and its system dependencies
+# This step also uses cache mounts for apt and playwright downloads
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
+    --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
+    apt-get update -qq \
+    && playwright install --with-deps --no-shell chromium \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Copy project files
