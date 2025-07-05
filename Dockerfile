@@ -30,8 +30,8 @@ RUN --mount=type=cache,target=/root/.cache/pip_uv,sharing=locked,id=pip-uv-cache
     pip install uv
 
 # IMPORTANT: Ensure 'uv' (and other pip-installed binaries like 'playwright' CLI) are in the PATH.
-# Assuming pip installs to /usr/local/bin in a system-wide context.
-# Also keep /root/.local/bin just in case.
+# In slim images, pip and uv (with --system) often install executables to /usr/local/bin.
+# This ENV instruction applies to all *subsequent* RUN commands in this stage and to the final image.
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
 # Now, use 'uv' to install playwright and patchright.
@@ -43,6 +43,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
     --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
     apt-get update -qq && \
     playwright install --with-deps --no-shell chromium && \
+    test -d "/root/.cache/ms-playwright" || (echo "ERROR: Playwright browser cache directory not found!" && exit 1) && \
     rm -rf /var/lib/apt/lists/*
 
 # --- DEBUGGING START (CRITICAL: Examine this output carefully in your next build) ---
@@ -67,7 +68,9 @@ FROM python:3.11-slim
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV PATH="/usr/local/bin:/root/.local/bin:$PATH" # Ensure /usr/local/bin is first in PATH here too
+# CRITICAL: Ensure PATH is also set correctly in the final stage.
+# This makes uv and playwright CLI tools callable at runtime.
+ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
 # Set the working directory for the final stage
 WORKDIR /app
@@ -76,8 +79,8 @@ WORKDIR /app
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
 # Copy the 'uv' and 'playwright' CLI executables from the builder stage.
-# Based on the common behavior for --system installs, they should be in /usr/local/bin.
-COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv # <-- Changed source path for uv
+# Assuming 'uv' is in /usr/local/bin, and 'playwright' is in /usr/local/bin
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
 COPY --from=builder /usr/local/bin/playwright /usr/local/bin/playwright
 
 # CRITICAL: Copy the Playwright browser binaries from the builder stage to the final image.
