@@ -38,8 +38,6 @@ RUN --mount=type=cache,target=/root/.cache/uv_deps,sharing=locked,id=uv-deps-cac
     uv pip install --system playwright==1.52.0 patchright==1.52.5
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
-# This step downloads and extracts the browser.
-# This forces the browser download to always be fresh and not rely on BuildKit's cache for this specific directory.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
     apt-get update -qq && \
     echo "--- Starting playwright install ---" && \
@@ -60,6 +58,7 @@ FROM python:3.11-slim
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+# CRITICAL: Ensure PATH is also set correctly in the final stage.
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
 # Set the working directory for the final stage
@@ -82,4 +81,5 @@ COPY . .
 EXPOSE 8000
 
 # Command to run your FastAPI application with Uvicorn.
-CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# CHANGE: Run uvicorn as a Python module for robustness
+CMD ["sh", "-c", "python -m uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]
