@@ -54,6 +54,10 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# Install Playwright browsers and dependencies
+RUN playwright install --with-deps
+
+
 # Copy project files
 COPY . .
 # Expose FastAPI port
