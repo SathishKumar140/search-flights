@@ -40,7 +40,7 @@ RUN --mount=type=cache,target=/root/.cache/pip_uv,sharing=locked,id=pip-uv-cache
 # IMPORTANT: Ensure 'uv' (and other pip-installed binaries like 'playwright' CLI) are in the PATH.
 # In slim images, pip and uv (with --system) often install executables to /usr/local/bin.
 # This ENV instruction applies to all *subsequent* RUN commands in this stage and to the final image.
-ENV PATH="/root/.local/bin:/usr/local/bin:$PATH" # Added /usr/local/bin explicitly at the start
+ENV PATH="/root/.local/bin:/usr/local/bin:$PATH"
 
 # Now, use 'uv' to install playwright and patchright.
 # This is a separate RUN command with its own cache mount for uv's internal cache.
@@ -53,12 +53,11 @@ RUN --mount=type=cache,target=/root/.cache/uv_deps,sharing=locked,id=uv-deps-cac
 # --with-deps: ensures necessary system libraries for the browser are installed.
 # --no-shell: prevents interactive prompts during installation.
 # Uses cache mounts for apt packages and Playwright's browser downloads.
-# Added 'test -d ...' to explicitly check for the directory creation.
+# Added 'test -d ...' to explicitly check for the directory creation and fail the build if it's not found.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
     --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
     apt-get update -qq && \
     playwright install --with-deps --no-shell chromium && \
-    # VERIFY THE BROWSER CACHE DIRECTORY EXISTS BEFORE CONTINUING
     test -d "/root/.cache/ms-playwright" || (echo "ERROR: Playwright browser cache directory not found!" && exit 1) && \
     rm -rf /var/lib/apt/lists/*
 
@@ -83,9 +82,9 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 # Copy the 'uv' and 'playwright' CLI executables from the builder stage.
 # Assuming 'uv' is in /root/.local/bin, and 'playwright' is in /usr/local/bin
 COPY --from=builder /root/.local/bin/uv /usr/local/bin/uv
-COPY --from=builder /usr/local/bin/playwright /usr/local/bin/playwright # <-- CORRECTED COPY PATH FOR PLAYWRIGHT CLI
+COPY --from=builder /usr/local/bin/playwright /usr/local/bin/playwright
 
-# --- CRITICAL: Copy the Playwright browser binaries from the builder stage to the final image. ---
+# CRITICAL: Copy the Playwright browser binaries from the builder stage to the final image.
 # This path must exactly match where playwright installed it in the builder stage.
 COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 
