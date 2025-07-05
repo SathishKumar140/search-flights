@@ -54,11 +54,6 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Install Playwright browsers and dependencies
-RUN playwright install --with-deps
-
-RUN mkdir -p /app/tmp/playwright_user_data && chmod -R 777 /app/tmp/playwright_user_data
-
 # Copy project files
 COPY . .
 # Expose FastAPI port
