@@ -25,35 +25,27 @@ RUN apt-get update -qq && apt-get install -y \
 # This allows Docker to cache this layer if requirements.txt doesn't change
 COPY requirements.txt .
 
+# Install pip upgrade
+RUN pip install --upgrade pip
 
+# Install requirements.txt using pip (good for layering)
 RUN pip install -r requirements.txt
 
-# Ensure 'uv' and other pip-installed binaries are in the PATH for this stage.
-ENV PATH="/root/.local/bin:$PATH"
-
-# Install Playwright Python packages using 'uv'.
-# Use --system flag to install into the global environment.
-# Uses a cache mount for uv's internal cache.
-RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked,id=uv-cache \
+# Install 'uv' and set PATH for the current shell, then use 'uv'.
+# This ensures 'uv' is found within the same command context.
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked,id=pip-cache-uv-install \
+    pip install uv && \
+    # Add uv's install location to PATH for this command's shell context
+    # /root/.local/bin is common for pip user installs in slim images
+    export PATH="/root/.local/bin:$PATH" && \
+    # Optional: Debugging step to confirm uv is found
+    which uv && \
+    echo "PATH after uv install: $PATH" && \
+    # Now use uv to install playwright and patchright
+    --mount=type=cache,target=/root/.cache/uv,sharing=locked,id=uv-cache-deps \
     uv pip install --system playwright==1.52.0 patchright==1.52.5
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
-    --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
-    apt-get update -qq && \
-    playwright install --with-deps --no-shell chromium && \
-    rm -rf /var/lib/apt/lists/*
-    
-# Install Chromium browser binary and its system dependencies using Playwright's installer.
-# This step *downloads* the browser to /root/.cache/ms-playwright/chromium-XXXX/chrome-linux/chrome.
-# --with-deps: Installs necessary system libraries for the browser.
-# --no-shell: Prevents interactive prompts during installation.
-# Uses cache mounts for apt packages and Playwright's browser downloads.
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
-    --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
-    apt-get update -qq && \
-    playwright install --with-deps --no-shell chromium && \
-    rm -rf /var/lib/apt/lists/*
 
 
 # Stage 2: Final - Create a smaller runtime image
