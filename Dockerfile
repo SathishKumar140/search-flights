@@ -26,23 +26,24 @@ RUN apt-get update -qq && apt-get install -y \
 COPY requirements.txt .
 
 
-# Install pip upgrade (this doesn't need a cache mount for itself)
-RUN pip install --upgrade pip
-
-# Install 'uv'.
-# This RUN command has the cache mount attached directly to it.
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked,id=pip-cache \
-    pip install uv
+RUN pip install -r requirements.txt
 
 # Ensure 'uv' and other pip-installed binaries are in the PATH for this stage.
 ENV PATH="/root/.local/bin:$PATH"
 
 # Install Playwright Python packages using 'uv'.
-# Use --system flag to install into the global environment of the container.
+# Use --system flag to install into the global environment.
 # Uses a cache mount for uv's internal cache.
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked,id=uv-cache \
     uv pip install --system playwright==1.52.0 patchright==1.52.5
 
+# Install Chromium browser binary and its system dependencies using Playwright's installer.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
+    --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
+    apt-get update -qq && \
+    playwright install --with-deps --no-shell chromium && \
+    rm -rf /var/lib/apt/lists/*
+    
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
 # This step *downloads* the browser to /root/.cache/ms-playwright/chromium-XXXX/chrome-linux/chrome.
 # --with-deps: Installs necessary system libraries for the browser.
