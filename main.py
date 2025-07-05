@@ -7,6 +7,8 @@ from browser_use.llm import ChatOpenAI as ChatOpenAIBrowserUse
 from langgraph.prebuilt import create_react_agent
 from typing import List
 from pydantic import BaseModel
+import shutil
+import os
 
 llm = ChatOpenAI(
         model="gpt-4.1",
@@ -74,10 +76,21 @@ async def search_flight(flight_details):
 
     url = f"https://www.google.com/travel/flights/search"
 
+    user_data_dir = "./tmp/playwright_user_data" # Make sure this matches what browser-use uses internally
+    # Clean up previous user data directory if it exists
+    if os.path.exists(user_data_dir):
+        try:
+            shutil.rmtree(user_data_dir)
+            print(f"Cleaned up old user data directory: {user_data_dir}")
+        except OSError as e:
+            print(f"Error removing user data directory {user_data_dir}: {e}")
+            # You might want to raise an exception or handle this more gracefully
+
+
     browser_session = BrowserSession(
         headless=True,
         chromium_sandbox=False,
-        user_data_dir="/app/tmp/playwright_user_data"
+        user_data_dir=user_data_dir
     )
 
     browserUseLLM = ChatOpenAIBrowserUse(
