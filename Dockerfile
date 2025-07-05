@@ -54,6 +54,9 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked,id=pip-cache \
+    pip install uv
+
 # Install Playwright browsers and dependencies
 RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=uv-cache \
     uv pip install playwright==1.52.0 patchright==0.1.0 # Specify desired versions directly here
