@@ -27,6 +27,9 @@ RUN playwright install --with-deps
 # Copy project files
 COPY . .
 
+# Create browseruse user data directories and set permissions for both root and /app
+RUN mkdir -p /root/.config/browseruse/profiles/default /app/.config/browseruse/profiles/default && chmod -R 777 /root/.config/browseruse /app/.config/browseruse
+
 # Expose FastAPI port
 EXPOSE 8000
 
