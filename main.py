@@ -75,7 +75,8 @@ async def search_flight(flight_details):
     url = f"https://www.google.com/travel/flights/search"
 
     browser_session = BrowserSession(
-        headless=True
+        headless=True,
+        chromium_sandbox=False
     )
 
     browserUseLLM = ChatOpenAIBrowserUse(
