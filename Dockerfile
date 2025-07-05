@@ -36,7 +36,7 @@ ENV PATH="/root/.local/bin:$PATH"
 # Crucial: Add --system flag to install into the global environment.
 # Using cache mount for uv's internal cache.
 RUN --mount=type=cache,target=/root/.cache,sharing=locked,id=uv-cache \
-    uv pip install --system playwright==1.52.0 patchright==0.1.0 # Add --system here!
+    uv pip install --system playwright==1.52.0 patchright==1.52.5 # Add --system here!
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
 # '--with-deps' ensures all necessary system libraries for Chromium are installed.
