@@ -25,14 +25,16 @@ RUN apt-get update -qq && apt-get install -y \
 # This allows Docker to cache this layer if requirements.txt doesn't change
 COPY requirements.txt .
 
-# Upgrade pip and install 'uv'.
-# Uses a cache mount for pip's cache.
-RUN pip install --upgrade pip && \
-    --mount=type=cache,target=/root/.cache/pip,sharing=locked,id=pip-cache \
+
+# Install pip upgrade (this doesn't need a cache mount for itself)
+RUN pip install --upgrade pip
+
+# Install 'uv'.
+# This RUN command has the cache mount attached directly to it.
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked,id=pip-cache \
     pip install uv
 
 # Ensure 'uv' and other pip-installed binaries are in the PATH for this stage.
-# In slim images, pip often installs executables to /root/.local/bin for the root user.
 ENV PATH="/root/.local/bin:$PATH"
 
 # Install Playwright Python packages using 'uv'.
