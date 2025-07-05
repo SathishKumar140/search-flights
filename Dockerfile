@@ -12,7 +12,6 @@ WORKDIR /app
 RUN apt-get update -qq && apt-get install -y \
     ca-certificates \
     fonts-liberation \
-    # Ensure unzip is installed, as Playwright downloads are ZIP archives
     unzip \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
@@ -40,16 +39,13 @@ RUN --mount=type=cache,target=/root/.cache/uv_deps,sharing=locked,id=uv-deps-cac
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
 # This step downloads and extracts the browser.
-# Adding more logging and explicit checks.
+# This forces the browser download to always be fresh and not rely on BuildKit's cache for this specific directory.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
-    --mount=type=cache,target=/root/.cache/ms-playwright,sharing=locked,id=playwright-browser-cache \
     apt-get update -qq && \
     echo "--- Starting playwright install ---" && \
     playwright install --with-deps --no-shell chromium || (echo "ERROR: playwright install command failed!" && exit 1) && \
     echo "--- playwright install command completed. Verifying cache directory. ---" && \
-    # Explicitly check if the main cache directory exists
     test -d "/root/.cache/ms-playwright" || (echo "CRITICAL ERROR: /root/.cache/ms-playwright does not exist after install!" && ls -la /root/.cache/ && exit 1) && \
-    # Explicitly check for the browser-specific directory within the cache
     test -d "/root/.cache/ms-playwright/chromium-1169" || (echo "CRITICAL ERROR: Chromium 1169 directory not found in cache!" && ls -la /root/.cache/ms-playwright/ && exit 1) && \
     echo "--- Playwright cache directory confirmed to exist! ---" && \
     echo "Contents of /root/.cache/ms-playwright/:" && ls -la /root/.cache/ms-playwright/ && \
@@ -64,7 +60,6 @@ FROM python:3.11-slim
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-# CRITICAL: Ensure PATH is also set correctly in the final stage.
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
 # Set the working directory for the final stage
