@@ -76,7 +76,8 @@ async def search_flight(flight_details):
 
     browser_session = BrowserSession(
         headless=True,
-        chromium_sandbox=False
+        chromium_sandbox=False,
+        user_data_dir="/app/tmp/playwright_user_data"
     )
 
     browserUseLLM = ChatOpenAIBrowserUse(

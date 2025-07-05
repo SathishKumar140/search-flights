@@ -1,6 +1,44 @@
 # Use official Python image
 FROM python:3.11-slim
 
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fontconfig \
+    libnss3 \
+    libgconf-2-4 \
+    libappindicator1 \
+    libasound2 \
+    libatk1.0-0 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libfreetype6 \
+    libgbm-dev \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    ca-certificates \
+    fonts-liberation \
+    --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -19,17 +57,10 @@ RUN pip install -r requirements.txt
 # Install Playwright browsers and dependencies
 RUN playwright install --with-deps
 
-# NOTE: If 'browser_use' is not available on PyPI, you must install it manually here.
-# For example, if it's a local package, add:
-# COPY browser_use ./browser_use
-# RUN pip install ./browser_use
+RUN mkdir -p /app/tmp/playwright_user_data && chmod -R 777 /app/tmp/playwright_user_data
 
 # Copy project files
 COPY . .
-
-# Create browseruse user data directories and set permissions for both root and /app
-RUN mkdir -p /root/.config/browseruse/profiles/default /app/.config/browseruse/profiles/default && chmod -R 777 /root/.config/browseruse /app/.config/browseruse
-
 # Expose FastAPI port
 EXPOSE 8000
 
