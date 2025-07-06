@@ -1,5 +1,8 @@
 # Use Python 3.13 as the base image
-FROM python:3.13
+FROM python:3.12-bookworm
+
+RUN pip install playwright==@1.52.0 && \
+    playwright install --with-deps
 
 # Set the working directory for your application
 WORKDIR /app
@@ -15,33 +18,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install system dependencies required by Playwright browsers and other tools.
 # This list is taken directly from your reference and from Playwright's recommendations.
 # --no-install-recommends helps keep the image size down by avoiding recommended packages.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnss3 \
-    libnspr4 \
-    libdbus-1-3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libxkbcommon0 \
-    libasound2 \
-    libatspi2.0-0 \
-    xvfb \
-    x11vnc \
-    fontconfig \
-    libxcursor1 \
-    libgtk-3-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# --- Then, install Playwright browser binaries ---
-# By default, 'playwright install' downloads Chromium, Firefox, and WebKit.
-# Now that system dependencies are present, this step should proceed without the missing dependency error.
-RUN playwright install
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
