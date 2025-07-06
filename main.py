@@ -9,7 +9,7 @@ from typing import List
 from pydantic import BaseModel
 
 llm = ChatOpenAI(
-        model="gpt-4.1",
+        model="gpt-4.1-mini",
 )
 
 load_dotenv()
@@ -81,7 +81,7 @@ async def search_flight(flight_details):
     )
 
     browserUseLLM = ChatOpenAIBrowserUse(
-        model="gpt-4.1",
+        model="gpt-4.1-mini",
     )
 
     controller = Controller(output_model=Flights)
