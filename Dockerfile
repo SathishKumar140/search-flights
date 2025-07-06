@@ -1,37 +1,55 @@
-# Use the specified Python 3.12 on Debian Bookworm as the base image
-FROM python:3.12-bookworm
-
-# Set common environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Use Python 3.13 as the base image
+FROM python:3.13
 
 # Set the working directory for your application
 WORKDIR /app
 
-# Update apt and install minimal core system dependencies that might be needed.
-# 'bookworm' is more complete than 'slim', so fewer specific packages might be needed here,
-# but 'playwright install --with-deps' will handle most browser-specific ones.
-RUN apt-get update -qq && apt-get install -y \
-    ca-certificates \
-    fonts-liberation \
-    unzip \
-    # Add any other fundamental system utilities your app might need here if not in bookworm
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copy your requirements.txt file
+# Copy your requirements.txt file into the container
 COPY requirements.txt .
 
-# Upgrade pip and install all Python dependencies from requirements.txt.
-# Ensure uvicorn is in your requirements.txt (e.g., uvicorn[standard])
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install Python dependencies from requirements.txt.
+# --no-cache-dir prevents pip from storing downloaded packages, saving image space.
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install the Playwright Python package and then download the Chromium browser binaries
-# along with their necessary system dependencies.
-# Corrected syntax for playwright version from ==@1.52.0 to ==1.52.0
-RUN pip install playwright==1.52.0 && \
-    playwright install --with-deps chromium
+# Install Playwright browser binaries.
+# By default, 'playwright install' downloads Chromium, Firefox, and WebKit.
+# It does NOT install system dependencies when used without --with-deps.
+RUN playwright install
+
+# Install system dependencies required by Playwright browsers and other tools.
+# This list is taken directly from your reference.
+# --no-install-recommends helps keep the image size down by avoiding recommended packages.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 \
+    libnspr4 \
+    libdbus-1-3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libxkbcommon0 \
+    libasound2 \
+    libatspi2.0-0 \
+    xvfb \
+    x11vnc \
+    fontconfig \
+    # The following were commented out in your reference, keeping them commented here.
+    # libx11-xcb1 \
+    # libgtk-3-0 \
+    # gstreamer1.0-libav \
+    # gstreamer1.0-plugins-good \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+# Set DISPLAY for headless browser environments (e.g., when using Xvfb)
+ENV DISPLAY=:99
 
 # Copy your application source code last.
 COPY . .
