@@ -13,7 +13,6 @@ RUN apt-get update -qq && apt-get install -y \
     ca-certificates \
     fonts-liberation \
     unzip \
-    # Add any other fundamental system dependencies your app explicitly needs here.
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
@@ -67,9 +66,10 @@ WORKDIR /app
 
 # Install critical runtime dependencies for Playwright that might not be in slim.
 # libglib2.0-0 provides libglib-2.0.so.0
-# Add any other specific browser dependencies here if they pop up
+# libnss3 provides libnss3.so
 RUN apt-get update -qq && apt-get install -y \
     libglib2.0-0 \
+    libnss3 \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
