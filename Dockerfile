@@ -1,7 +1,7 @@
 # Use Python 3.13 as the base image
 FROM python:3.12-bookworm
 
-RUN pip install playwright==@1.52.0 && \
+RUN pip install playwright && \
     playwright install --with-deps
 
 # Set the working directory for your application
