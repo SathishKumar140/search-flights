@@ -34,11 +34,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11vnc \
     fontconfig \
-    # The following were commented out in your reference, keeping them commented here.
-    # libx11-xcb1 \
-    # libgtk-3-0 \
-    # gstreamer1.0-libav \
-    # gstreamer1.0-plugins-good \
+    libxcursor1 \           # <--- ADDED THIS LINE
+    libgtk-3-0 \            # <--- UNCOMMENTED THIS LINE
+    # libx11-xcb1 \         # Kept commented as per your original reference
+    # gstreamer1.0-libav \  # Kept commented as per your original reference
+    # gstreamer1.0-plugins-good \ # Kept commented as per your original reference
     && rm -rf /var/lib/apt/lists/*
 
 # --- Then, install Playwright browser binaries ---
