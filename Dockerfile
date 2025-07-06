@@ -1,4 +1,5 @@
-# Stage 1: Builder - Install all Python dependencies, uv, and the playwright Python package
+# Stage 1: Builder - Only used for Playwright browser binaries download (optional now, but kept for cache)
+# Since the final image contains Python and Playwright, this builder stage is less critical for deps.
 FROM python:3.11-slim as builder
 
 # Set common environment variables for the builder stage
@@ -15,29 +16,30 @@ RUN apt-get update -qq && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy your requirements.txt
-COPY requirements.txt .
-
-# Upgrade pip (needed initially to install uv itself, as uv isn't natively available)
-RUN pip install --upgrade pip
-
-# Install 'uv' using pip.
-RUN --mount=type=cache,target=/root/.cache/uv_self_install,sharing=locked,id=uv-self-install-cache \
+# Install 'uv' using pip (uv itself is needed to install playwright-python)
+RUN pip install --upgrade pip && \
     pip install uv
 
 # IMPORTANT: Ensure 'uv' CLI is in the PATH.
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
-# NOW, use 'uv' to install ALL Python dependencies from requirements.txt.
-# This assumes requirements.txt contains:
-# - uvicorn[standard] (or uvicorn)
-# - playwright==1.52.0
-# - patchright==1.52.5
-RUN --mount=type=cache,target=/root/.cache/uv_deps,sharing=locked,id=uv-deps-cache \
-    uv pip install --system -r requirements.txt
+# Install playwright and patchright using uv in the builder, solely to download browser binaries.
+# The python packages will be installed in the final stage.
+RUN --mount=type=cache,target=/root/.cache/uv_deps_builder,sharing=locked,id=uv-deps-builder-cache \
+    uv pip install --system playwright==1.52.0 patchright==1.52.5
+
+# Install Chromium browser binary and its system dependencies using Playwright's installer.
+# This downloads and extracts the browser.
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
+    apt-get update -qq && \
+    echo "--- Starting playwright install ---" && \
+    playwright install --with-deps --no-shell chromium || (echo "ERROR: playwright install command failed!" && exit 1) && \
+    echo "--- playwright install command completed. Verifying cache directory. ---" && \
+    test -d "/root/.cache/ms-playwright" || (echo "CRITICAL ERROR: /root/.cache/ms-playwright does not exist after install!" && ls -la /root/.cache/ && exit 1) && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # Stage 2: Final - Create the runtime image using a Playwright base image
-# This image already includes all browser binaries and their system dependencies.
 FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
 
 # Set common environment variables for the final stage
@@ -48,13 +50,16 @@ ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 # Set the working directory for the final stage
 WORKDIR /app
 
-# Copy all installed Python packages from the builder stage.
-# uv, by default with --system, installs to /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+# Copy requirements.txt to the final stage
+COPY requirements.txt .
 
-# Copy the 'uv' CLI executable from the builder stage.
-# The Playwright base image usually has its own 'playwright' CLI, but copying 'uv' is good practice.
-COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
+# Install 'uv' in the final stage.
+# This is necessary because the Playwright image might not have uv pre-installed.
+RUN pip install uv
+
+# Now, use 'uv' to install ALL Python dependencies from requirements.txt directly in the final stage.
+# This ensures packages are installed into the exact Python environment that will run the app.
+RUN uv pip install --system -r requirements.txt
 
 # Copy your application source code last.
 COPY . .
