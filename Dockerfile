@@ -34,8 +34,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11vnc \
     fontconfig \
-    libxcursor1 \           # <--- ADDED THIS LINE
-    libgtk-3-0 \            # <--- UNCOMMENTED THIS LINE
+    libxcursor1 \
+    libgtk-3-0 \            # <--- REMOVED THE TRAILING BACKSLASH HERE
     # libx11-xcb1 \         # Kept commented as per your original reference
     # gstreamer1.0-libav \  # Kept commented as per your original reference
     # gstreamer1.0-plugins-good \ # Kept commented as per your original reference
