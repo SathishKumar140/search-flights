@@ -27,7 +27,7 @@ ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 # We remove version pins here to let uv pick the latest compatible versions,
 # which should avoid the browser-use conflict.
 RUN --mount=type=cache,target=/root/.cache/uv_deps_builder,sharing=locked,id=uv-deps-builder-cache \
-    uv pip install --system playwright patchright # <--- REMOVED VERSION PINS HERE
+    uv pip install --system playwright patchright
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
 # This downloads and extracts the browser based on the 'playwright' version just installed.
@@ -41,7 +41,8 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
 
 
 # Stage 2: Final - Create the runtime image using a Playwright base image
-FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy # <--- IMPORTANT: Read note below!
+# IMPORTANT: Adjust this image version if the 'playwright' version installed in the final stage updates significantly.
+FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
 
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
