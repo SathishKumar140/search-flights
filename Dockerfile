@@ -69,11 +69,13 @@ WORKDIR /app
 # libnss3 provides libnss3.so
 # libdbus-1-3 provides libdbus-1.so.3
 # libatk1.0-0 provides libatk-1.0.so.0
+# libatk-bridge2.0-0 provides libatk-bridge-2.0.so.0
 RUN apt-get update -qq && apt-get install -y \
     libglib2.0-0 \
     libnss3 \
     libdbus-1-3 \
     libatk1.0-0 \
+    libatk-bridge2.0-0 \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
