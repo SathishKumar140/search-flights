@@ -18,6 +18,7 @@ load_dotenv()
 
 class Flight(BaseModel):
     price: str
+    currency: str
     flight_duration: str
     stops: str
     airlines: str
@@ -74,11 +75,9 @@ async def search_flight(flight_details):
 
     url = f"https://www.google.com/travel/flights/search"
 
-
     browser_session = BrowserSession(
         headless=True,
-        chromium_sandbox=False,
-        user_data_dir=None
+        chromium_sandbox=False
     )
 
     browserUseLLM = ChatOpenAIBrowserUse(
@@ -87,7 +86,7 @@ async def search_flight(flight_details):
 
     controller = Controller(output_model=Flights)
 
-    task = f"First, **navigate to the specified URL**: `{url}`. Upon loading, locate the 'Where from' field and input {origin}, then select the suggested origin from the autocomplete list.  once selected choose another field, locate the 'Where to' field and input {destination}, and select the suggested destination., choose the `departure date` `{departure_date}` into the respective calendar and perform selection in the calender, and the `return date` `{return_date}` into its corresponding field (if this is a one-way search, locate and **select the 'One-Way' radio button or checkbox** and **omit inputting the return date**). After all fields are populated, **locate and click the primary 'Search Flights' or 'Find Flights' button**. Once the flight results page has fully loaded and all dynamic content (like loading spinners) has settled, **iterate through each individual flight listing** displayed. For each listing, **extract the following information**: the `price` (including currency, e.g., 'SGD 500'), the `total flight duration` (e.g., '7h 30m'), the `number of stops` (e.g., 'Nonstop', '1 stop', '2 stops'), the `operating airline(s)` (e.g., 'Singapore Airlines' or 'Singapore Airlines, SilkAir'), the `scheduled departure time` (e.g., '10:00 AM'), the `scheduled arrival time` (e.g., '5:30 PM'), the `flight number(s)` (e.g., 'SQ123', 'SQ123 / MI456' – if available), and for flights with stops, `detailed layover information` including the `layover location` (e.g., 'Hong Kong (HKG)') and `layover duration` (e.g., '2h 00m') for each segment. Finally, **compile all extracted flight details into a JSON array**, where each object in the array represents a single flight, adhering to the specified keys (price, flight_duration, stops, airlines, departure_time, arrival_time, flight_number, layover_details)."
+    task = f"First, **navigate to the specified URL**: `{url}`. Upon loading, locate the 'Where from' field and input {origin}, then select the suggested origin from the autocomplete list.  once selected choose another field, locate the 'Where to' field and input {destination}, and select the suggested destination., choose the `departure date` `{departure_date}` into the respective calendar and perform selection in the calender, and the `return date` `{return_date}` into its corresponding field (if this is a one-way search, locate and **select the 'One-Way' radio button or checkbox** and **omit inputting the return date**). After all fields are populated, **locate and click the primary 'Search Flights' or 'Find Flights' button**. Once the flight results page has fully loaded and all dynamic content (like loading spinners) has settled, **iterate through each individual flight listing** displayed. For each listing, **extract the following information**: the `price` (including currency, e.g., '500'), `currency` (eg: SGD, INR) the `total flight duration` (e.g., '7h 30m'), the `number of stops` (e.g., 'Nonstop', '1 stop', '2 stops'), the `operating airline(s)` (e.g., 'Singapore Airlines' or 'Singapore Airlines, SilkAir'), the `scheduled departure time` (e.g., '10:00 AM'), the `scheduled arrival time` (e.g., '5:30 PM'), the `flight number(s)` (e.g., 'SQ123', 'SQ123 / MI456' – if available), and for flights with stops, `detailed layover information` including the `layover location` (e.g., 'Hong Kong (HKG)') and `layover duration` (e.g., '2h 00m') for each segment. Finally, **compile all extracted flight details into a JSON array**, where each object in the array represents a single flight, adhering to the specified keys (price, flight_duration, stops, airlines, departure_time, arrival_time, flight_number, layover_details)."
     agent = Agent(
         task=task,
         llm=browserUseLLM,
