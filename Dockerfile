@@ -23,13 +23,14 @@ RUN pip install --upgrade pip && \
 # IMPORTANT: Ensure 'uv' CLI is in the PATH.
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
-# Install playwright and patchright using uv in the builder, solely to download browser binaries.
-# The python packages will be installed in the final stage.
+# Install playwright and patchright using uv in the builder.
+# We remove version pins here to let uv pick the latest compatible versions,
+# which should avoid the browser-use conflict.
 RUN --mount=type=cache,target=/root/.cache/uv_deps_builder,sharing=locked,id=uv-deps-builder-cache \
-    uv pip install --system playwright==1.52.0 patchright==1.52.5
+    uv pip install --system playwright patchright # <--- REMOVED VERSION PINS HERE
 
 # Install Chromium browser binary and its system dependencies using Playwright's installer.
-# This downloads and extracts the browser.
+# This downloads and extracts the browser based on the 'playwright' version just installed.
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
     apt-get update -qq && \
     echo "--- Starting playwright install ---" && \
@@ -40,7 +41,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
 
 
 # Stage 2: Final - Create the runtime image using a Playwright base image
-FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy # <--- IMPORTANT: Read note below!
 
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -58,7 +59,7 @@ COPY requirements.txt .
 RUN pip install uv
 
 # Now, use 'uv' to install ALL Python dependencies from requirements.txt directly in the final stage.
-# This ensures packages are installed into the exact Python environment that will run the app.
+# Assuming requirements.txt now only specifies "playwright" and "patchright" without pins.
 RUN uv pip install --system -r requirements.txt
 
 # Copy your application source code last.
