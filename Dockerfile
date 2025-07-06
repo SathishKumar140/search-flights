@@ -1,4 +1,5 @@
-# Stage 1: Builder - Install all Python dependencies, uv, and browser binaries
+# Stage 1: Builder - Install all Python dependencies, uv, and the playwright Python package
+# We keep this stage lean to build Python packages efficiently.
 FROM python:3.11-slim as builder
 
 # Set common environment variables for the builder stage
@@ -8,10 +9,9 @@ ENV PYTHONUNBUFFERED=1
 # Set the working directory for the builder stage
 WORKDIR /app
 
-# Install minimal system dependencies required for Playwright and general use.
+# Install minimal system dependencies required for building Python packages.
 RUN apt-get update -qq && apt-get install -y \
     ca-certificates \
-    fonts-liberation \
     unzip \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
@@ -23,71 +23,39 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 
 # Install main Python dependencies from requirements.txt.
+# Ensure Playwright is in requirements.txt (e.g., playwright==1.52.0)
 RUN --mount=type=cache,target=/root/.cache/pip_reqs,sharing=locked,id=pip-reqs-cache \
     pip install -r requirements.txt
 
 # Install 'uv' using pip.
-RUN --mount=type=cache,target=/root/.cache/.uv_deps,sharing=locked,id=pip-uv-cache \
+RUN --mount=type=cache,target=/root/.cache/uv_uv,sharing=locked,id=uv-uv-cache \
     pip install uv
 
-# IMPORTANT: Ensure 'uv' and 'playwright' CLI are in the PATH.
+# IMPORTANT: Ensure 'uv' CLI is in the PATH (playwright CLI will be in the final image)
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
-# Now, use 'uv' to install playwright and patchright.
-RUN --mount=type=cache,target=/root/.cache/uv_deps,sharing=locked,id=uv-deps-cache \
-    uv pip install --system playwright==1.52.0 patchright==1.52.5
-
-# Install Chromium browser binary and its system dependencies using Playwright's installer.
-# This step downloads and extracts the browser.
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked,id=apt-cache \
-    apt-get update -qq && \
-    echo "--- Starting playwright install ---" && \
-    playwright install --with-deps --no-shell chromium || (echo "ERROR: playwright install command failed!" && exit 1) && \
-    echo "--- playwright install command completed. Verifying cache directory. ---" && \
-    test -d "/root/.cache/ms-playwright" || (echo "CRITICAL ERROR: /root/.cache/ms-playwright does not exist after install!" && ls -la /root/.cache/ && exit 1) && \
-    test -d "/root/.cache/ms-playwright/chromium-1169" || (echo "CRITICAL ERROR: Chromium 1169 directory not found in cache!" && ls -la /root/.cache/ms-playwright/ && exit 1) && \
-    echo "--- Playwright cache directory confirmed to exist! ---" && \
-    echo "Contents of /root/.cache/ms-playwright/:" && ls -la /root/.cache/ms-playwright/ && \
-    echo "Contents of /root/.cache/ms-playwright/chromium-1169/:" && ls -la /root/.cache/ms-playwright/chromium-1169/ && \
-    echo "Size of Playwright cache:" && du -sh /root/.cache/ms-playwright/ && \
-    rm -rf /var/lib/apt/lists/*
-
-
-# Stage 2: Final - Create a smaller runtime image
-FROM python:3.11-slim
+# Stage 2: Final - Create the runtime image using a Playwright base image
+# This image already includes all browser binaries and their system dependencies.
+FROM mcr.microsoft.com/playwright/python:v1.52.0-jammy
 
 # Set common environment variables for the final stage
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+# Playwright images usually set PATH correctly, but good to be explicit for other tools
 ENV PATH="/usr/local/bin:/root/.local/bin:$PATH"
 
 # Set the working directory for the final stage
 WORKDIR /app
 
-# Install critical runtime dependencies for Playwright that might not be in slim.
-# libglib2.0-0 provides libglib-2.0.so.0
-# libnss3 provides libnss3.so
-# libdbus-1-3 provides libdbus-1.so.3
-# libatk1.0-0 provides libatk-1.0.so.0
-# libatk-bridge2.0-0 provides libatk-bridge-2.0.so.0
-RUN apt-get update -qq && apt-get install -y \
-    libglib2.0-0 \
-    libnss3 \
-    libdbus-1-3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
 # Copy all installed Python packages from the builder stage.
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
-# Copy the 'uv' and 'playwright' CLI executables from the builder stage.
+# Copy the 'uv' CLI executable from the builder stage.
+# Playwright CLI is already present in the base image.
 COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
-COPY --from=builder /usr/local/bin/playwright /usr/local/bin/playwright
 
-# CRITICAL: Copy the Playwright browser binaries from the builder stage to the final image.
-COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+# NOTE: We no longer need to copy /root/.cache/ms-playwright/
+# as the Playwright base image already has the browsers installed.
 
 # Copy your application source code last.
 COPY . .
