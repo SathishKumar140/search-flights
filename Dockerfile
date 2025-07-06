@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/pip_reqs,sharing=locked,id=pip-reqs-c
     pip install -r requirements.txt
 
 # Install 'uv' using pip.
-RUN --mount=type=cache,target=/root/.cache/pip_uv,sharing=locked,id=pip-uv-cache \
+RUN --mount=type=cache,target=/root/.cache/.uv_deps,sharing=locked,id=pip-uv-cache \
     pip install uv
 
 # IMPORTANT: Ensure 'uv' and 'playwright' CLI are in the PATH.
@@ -67,9 +67,11 @@ WORKDIR /app
 # Install critical runtime dependencies for Playwright that might not be in slim.
 # libglib2.0-0 provides libglib-2.0.so.0
 # libnss3 provides libnss3.so
+# libdbus-1-3 provides libdbus-1.so.3
 RUN apt-get update -qq && apt-get install -y \
     libglib2.0-0 \
     libnss3 \
+    libdbus-1-3 \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
