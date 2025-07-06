@@ -61,7 +61,7 @@ RUN pip install uv
 
 # Now, use 'uv' to install ALL Python dependencies from requirements.txt directly in the final stage.
 # Assuming requirements.txt now only specifies "playwright" and "patchright" without pins.
-RUN uv pip install --system -r requirements.txt
+RUN uv pip install -r requirements.txt
 
 # Copy your application source code last.
 COPY . .
