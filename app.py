@@ -107,9 +107,10 @@ def process_flight_search(flight_request: FlightRequest, details):
             if not valid_flights:
                 result = {"error": "No flights with valid prices found"}
             else:
+                import re
                 cheapest_flight = min(
                     valid_flights,
-                    key=lambda x: float(x['price'].replace('SGD ', '').replace(',', ''))
+                    key=lambda x: float(re.search(r'(\d[\d,]*)+', x['price']).group(0).replace(',', '')) if re.search(r'(\d[\d,]*)+', x['price']) else float('inf')
                 )
                 airlines = cheapest_flight.get('airlines', '')
                 departure_time = cheapest_flight.get('departure_time', '')
